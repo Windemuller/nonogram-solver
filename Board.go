@@ -16,6 +16,7 @@ type Board struct {
 	valuesCols  [][]int
 }
 
+//Extracts the row values from the values.txt file using the filereader function
 func makeRowValues(boardLength int) [][]int {
 	rowValues := make([][]int, 0)
 	for i := 1; i <= boardLength; i++ {
@@ -24,6 +25,7 @@ func makeRowValues(boardLength int) [][]int {
 	return rowValues
 }
 
+//Extracts the column values from the values.txt file using the filereader function
 func makeColValues(boardLength int) [][]int {
 	colValues := make([][]int, 0)
 	for i := 1; i <= boardLength; i++ {
@@ -56,10 +58,12 @@ func printBoard(board Board) {
 	}
 }
 
+//fills in a space with a given symbol
 func fillInSpace(board *Board, symbol string, positionRow int, positionCol int) {
 	board.board[positionRow][positionCol] = symbol
 }
 
+//fills in a whole row or column of fields with a symbol, depending on input
 func fillInAllSpaces(board *Board, symbol string, numRowOrCol int, rowOrCol string) {
 	if rowOrCol == "row" {
 		for i := 0; i < board.boardLength; i++ {
@@ -87,38 +91,65 @@ func solveEasyFields(board *Board) {
 			fillInAllSpaces(board, negativeField, i, "row")
 		} else if valuesRow[0] == board.boardLength { //fills in the fully filled rows
 			fillInAllSpaces(board, positiveField, i, "row")
-		} else if sumArray(valuesRow)+len(valuesRow)-1 == board.boardLength {
-			index := 0
-			for _, element := range valuesRow {
-				for k := 0; k < element; k++ { //for every element in valuesRow fills in that many "positive fields"
-					fillInSpace(board, positiveField, i, index)
-					index++
-				}
-				if index != board.boardLength-1 { //adds a negative field after each element if the indexed field is not off the board
-					fillInSpace(board, negativeField, i, index)
-					index++
-				}
-			}
 		}
+		solveEasyFieldsStep3(board, valuesRow, "row", i)
+		solveEasyFieldsStep4(board, valuesRow, "row", i)
 
 		if len(valuesCol) == 0 { //fills in the empty columns
 			fillInAllSpaces(board, negativeField, i, "col")
 		} else if valuesCol[0] == board.boardLength { //fills in the fully filled columns
 			fillInAllSpaces(board, positiveField, i, "col")
-		} else if sumArray(valuesCol)+len(valuesCol)-1 == board.boardLength {
-			index := 0
-			for _, element := range valuesCol {
-				for k := 0; k < element; k++ { //for every element in valuesCol fills in that many "positive fields"
-					fillInSpace(board, positiveField, index, i)
-					index++
-				}
-				if index != board.boardLength-1 { //adds a negative field after each element if the indexed field is not off the board
-					fillInSpace(board, negativeField, index, i)
-					index++
-				}
+		}
+		solveEasyFieldsStep3(board, valuesCol, "col", i)
+		solveEasyFieldsStep4(board, valuesCol, "col", i)
+	}
+}
+
+/*Step 3 of solveEasyFields looks at the rows where the combined value of the row or column restraints combined with the number of them,
+minus 1 is equal to the boardlength. This makes the whole row or column fillable. */
+func solveEasyFieldsStep3(board *Board, values []int, rowOrCol string, rowOrColNumber int) {
+	if sumArray(values)+len(values)-1 == board.boardLength && rowOrCol == "col" {
+		index := 0
+		for _, element := range values {
+			for k := 0; k < element; k++ { //for every element in values fills in that many "positive fields"
+				fillInSpace(board, positiveField, index, rowOrColNumber)
+				index++
 			}
-		} else if valuesCol[0] >= board.boardLength/2 {
-			//index
+			if index != board.boardLength-1 { //adds a negative field after each element if the indexed field is not off the board
+				fillInSpace(board, negativeField, index, rowOrColNumber)
+				index++
+			}
+		}
+	} else if sumArray(values)+len(values)-1 == board.boardLength {
+		index := 0
+		for _, element := range values {
+			for k := 0; k < element; k++ { //for every element in values fills in that many "positive fields"
+				fillInSpace(board, positiveField, rowOrColNumber, index)
+				index++
+			}
+			if index != board.boardLength-1 { //adds a negative field after each element if the indexed field is not off the board
+				fillInSpace(board, negativeField, rowOrColNumber, index)
+				index++
+			}
+		}
+	}
+}
+
+/*step 4 of solveEasyFields looks at the rows where the restraint value is more than half of the boardlength, this makes it so that by
+logic some fields in that row or column are solvable*/
+func solveEasyFieldsStep4(board *Board, values []int, rowOrCol string, rowOrColNumber int) {
+	if values[0] >= board.boardLength/2+1 && rowOrCol == "col" {
+		startIndex := board.boardLength - 1 - values[0]
+		endIndex := 0 + values[0]
+		for index := startIndex; index <= endIndex; index++ {
+			fillInSpace(board, positiveField, index, rowOrColNumber)
+		}
+
+	} else if values[0] >= board.boardLength/2+1 {
+		startIndex := board.boardLength - 1 - values[0]
+		endIndex := 0 + values[0]
+		for index := startIndex; index <= endIndex; index++ {
+			fillInSpace(board, positiveField, rowOrColNumber, index)
 		}
 	}
 }
