@@ -94,6 +94,9 @@ func solveEasyFields(board *Board) {
 		}
 		solveEasyFieldsStep3(board, valuesRow, "row", i)
 		solveEasyFieldsStep4(board, valuesRow, "row", i)
+		if len(valuesRow) == 2 && sumArray(valuesRow) > board.boardLength/2 {
+			solveEasyFieldsStep5(board, valuesRow, "row", i)
+		}
 
 		if len(valuesCol) == 0 { //fills in the empty columns
 			fillInAllSpaces(board, negativeField, i, "col")
@@ -102,11 +105,16 @@ func solveEasyFields(board *Board) {
 		}
 		solveEasyFieldsStep3(board, valuesCol, "col", i)
 		solveEasyFieldsStep4(board, valuesCol, "col", i)
+		if len(valuesCol) == 2 && sumArray(valuesCol) > board.boardLength/2 {
+			solveEasyFieldsStep5(board, valuesCol, "col", i)
+		}
 	}
 }
 
-/*Step 3 of solveEasyFields looks at the rows where the combined value of the row or column restraints combined with the number of them,
-minus 1 is equal to the boardlength. This makes the whole row or column fillable. */
+/*
+Step 3 of solveEasyFields looks at the rows where the combined value of the row or column restraints combined with the number of them,
+minus 1 is equal to the boardlength. This makes the whole row or column fillable.
+*/
 func solveEasyFieldsStep3(board *Board, values []int, rowOrCol string, rowOrColNumber int) {
 	if sumArray(values)+len(values)-1 == board.boardLength && rowOrCol == "col" {
 		index := 0
@@ -135,8 +143,10 @@ func solveEasyFieldsStep3(board *Board, values []int, rowOrCol string, rowOrColN
 	}
 }
 
-/*step 4 of solveEasyFields looks at the rows where the restraint value is more than half of the boardlength, this makes it so that by
-logic some fields in that row or column are solvable*/
+/*
+step 4 of solveEasyFields looks at the rows and columns where the restraint value is more than half of the boardlength, this makes it so that by
+logic some fields in that row or column are solvable
+*/
 func solveEasyFieldsStep4(board *Board, values []int, rowOrCol string, rowOrColNumber int) {
 	if values[0] >= board.boardLength/2+1 && rowOrCol == "col" {
 		startIndex := board.boardLength - 1 - values[0]
@@ -150,6 +160,43 @@ func solveEasyFieldsStep4(board *Board, values []int, rowOrCol string, rowOrColN
 		endIndex := 0 + values[0]
 		for index := startIndex; index <= endIndex; index++ {
 			fillInSpace(board, positiveField, rowOrColNumber, index)
+		}
+	}
+}
+
+/*
+step 5 of solveEasyFields looks at the rows and columns with 2 values where some fields would be positive in all situations and fills them in
+by making a map of all possible indexes in a row or column. The function then makes a comparison map for each possible combination
+of constraints and blocks, and deletes the values in the possible map that are not in the comparisonmap.
+*/
+func solveEasyFieldsStep5(board *Board, values []int, rowOrCol string, rowOrColNumber int) {
+	possibleFields := make(map[int]bool)
+	lastFieldIndex := 0
+	for index := range possibleFields {
+		possibleFields[index] = true
+	}
+	for startIndex := 0; startIndex+sumArray(values)+1 <= board.boardLength; startIndex++ {
+		for gap := 1; lastFieldIndex != board.boardLength-1; gap++ {
+			compareMap := make(map[int]bool)
+			for i := 0; i < values[0]; i++ {
+				compareMap[startIndex+i] = true
+			}
+			for i := 0; i < values[1]; i++ {
+				compareMap[startIndex+values[0]+gap+i] = true
+				lastFieldIndex = startIndex + values[0] + gap + i
+			}
+			for k := range possibleFields {
+				if _, ok := compareMap[k]; ok == false {
+					delete(possibleFields, k)
+				}
+			}
+		}
+	}
+	for k := range possibleFields {
+		if rowOrCol == "row" {
+			fillInSpace(board, positiveField, rowOrColNumber, k)
+		} else {
+			fillInSpace(board, positiveField, k, rowOrColNumber)
 		}
 	}
 }
@@ -173,6 +220,7 @@ func solveBoard(board Board) {
 	}
 }
 
+//Checks if the board is solved by looking if all the fields have been filled in
 func isBoardSolved(board *Board) bool {
 	for i := 0; i < board.boardLength; i++ {
 		for j := 0; j < board.boardLength; j++ {
@@ -184,6 +232,7 @@ func isBoardSolved(board *Board) bool {
 	return true
 }
 
+//creates a sum of all values in an integer array
 func sumArray(array []int) int {
 	output := 0
 	for _, element := range array {
