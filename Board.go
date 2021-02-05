@@ -16,6 +16,11 @@ type Board struct {
 	valuesCols  [][]int
 }
 
+type potentialSolution struct {
+	board    Board
+	children []*potentialSolution
+}
+
 //Extracts the row values from the values.txt file using the filereader function
 func makeRowValues(boardLength int) [][]int {
 	rowValues := make([][]int, 0)
@@ -167,7 +172,7 @@ func solveEasyFieldsStep4(board *Board, values []int, rowOrCol string, rowOrColN
 /*
 step 5 of solveEasyFields looks at the rows and columns with 2 values where some fields would be positive in all situations and fills them in
 by making a map of all possible indexes in a row or column. The function then makes a comparison map for each possible combination
-of constraints and blocks, and deletes the values in the possible map that are not in the comparisonmap.
+of constraints and blocks, and deletes the values in the possible map that are not in the comparison map.
 */
 func solveEasyFieldsStep5(board *Board, values []int, rowOrCol string, rowOrColNumber int) {
 	possibleFields := make(map[int]bool)
@@ -241,5 +246,56 @@ func sumArray(array []int) int {
 	return output
 }
 
+func moveIsValid(board *Board, row int, col int) bool {
+	return (rowValidity(board, row) && colValidity(board, col))
+}
+
+func rowValidity(board *Board, row int) bool {
+	index := 0
+	for _, value := range board.valuesRows[row] {
+		count := 0
+		for i := index; i < board.boardLength; index++ {
+			if board.board[row][index] == positiveField {
+				count++
+				if count > value {
+					return false
+				}
+			} else if board.board[row][index] == negativeField {
+				if count != value {
+					return false
+				}
+				break
+			} else {
+				return true
+			}
+		}
+	}
+	return true
+}
+
+func colValidity(board *Board, col int) bool {
+	index := 0
+	for _, value := range board.valuesCols[col] {
+		count := 0
+		for i := index; i < board.boardLength; index++ {
+			if board.board[index][col] == positiveField {
+				count++
+				if count > value {
+					return false
+				}
+			} else if board.board[index][col] == negativeField {
+				if count != value {
+					return false
+				}
+				break
+			} else {
+				return true
+			}
+		}
+	}
+	return true
+}
 func main() {
 }
+
+//TODO backtracking algorithm
